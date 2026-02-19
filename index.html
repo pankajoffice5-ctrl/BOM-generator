@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Solid Edge BOM to BOQ Generator</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    margin:20px;
+    background:#f4f6f9;
+}
+
+h2{
+    background:#2c3e50;
+    color:white;
+    padding:10px;
+}
+
+textarea{
+    width:100%;
+    height:200px;
+    padding:10px;
+    font-size:14px;
+}
+
+button{
+    padding:10px 20px;
+    margin-top:10px;
+    font-size:16px;
+    cursor:pointer;
+    background:#27ae60;
+    color:white;
+    border:none;
+}
+
+button:hover{
+    background:#219150;
+}
+
+table{
+    border-collapse:collapse;
+    width:100%;
+    margin-top:15px;
+    background:white;
+}
+
+th, td{
+    border:1px solid #444;
+    padding:6px;
+    text-align:left;
+}
+
+th{
+    background:#34495e;
+    color:white;
+}
+
+.section{
+    margin-top:30px;
+}
+.summary{
+    background:#ecf0f1;
+    padding:10px;
+    margin-top:20px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>ORGANISED MATERIALS REPORT</h2>
+
+<div style="background:#ecf0f1; padding:10px; margin-bottom:15px;">
+
+    <label><b>Maker Name:</b></label><br>
+    <input type="text" id="mekerName" value="PANKAJ" 
+           placeholder="Enter Meker Name"
+           style="width:100%; padding:8px; margin-top:5px;">
+
+    <br><br>
+
+    <label><b>Project Name:</b></label><br>
+    <input type="text" id="ProjectName" 
+           placeholder="Enter Project Name"
+           style="width:100%; padding:8px; margin-top:5px;">
+
+</div>
+
+<p>Copy full BOM from Excel/Solid Edge and paste below:</p>
+
+<textarea id="bomData" placeholder="Paste BOM here..."></textarea>
+
+<br>
+
+<button onclick="processData()">Generate BOQ</button>
+
+<div id="output"></div>
+
+<script>
+
+function processData(){
+
+    const raw = document.getElementById("bomData").value.trim();
+    if(!raw){
+        alert("Please paste BOM data first.");
+        return;
+    }
+
+    const lines = raw.split("\n");
+
+    let steelSections = [];
+    let plates = [];
+    let hardware = [];
+    let concrete = [];
+    let others = [];
+
+    let totalSteelSections = 0;
+    let totalPlates = 0;
+    let totalHardware = 0;
+    let totalConcrete = 0;
+    let totalOthers = 0;
+
+    lines.slice(1).forEach(line=>{
+
+        let cols = line.split("\t");
+        if(cols.length < 6) return;
+
+        let item = cols[0];
+        let part = cols[1].toUpperCase();
+        let qty = cols[2];
+        let massQty = parseFloat(cols[4].replace("kg","")) || 0;
+        let desc = cols[5];
+        let material = cols[6] || "";
+
+        let row = [item, part, qty, massQty.toFixed(2)+" kg", desc];
+
+        if(part.includes("SHS") || part.includes("RHS") || part.includes("CHS") || part.includes("PIPE")){
+            steelSections.push(row);
+            totalSteelSections += massQty;
+        }
+        else if(part.includes("PLATE") || part.includes("RIB") || part.includes("CAP")){
+            plates.push(row);
+            totalPlates += massQty;
+        }
+        else if(part.includes("BOLT") || part.includes("NUT") || part.includes("WASHER") || part.includes("SCREW")){
+            hardware.push(row);
+            totalHardware += massQty;
+        }
+        else if(material.toUpperCase().includes("CONCRETE") || part.includes("RCC")){
+            concrete.push(row);
+            totalConcrete += massQty;
+        }
+        else{
+            others.push(row);
+            totalOthers += massQty;
+        }
+
+    });
+
+    document.getElementById("output").innerHTML =
+        makeTable("Steel Sections", steelSections) +
+        makeTable("Plates & Fabrication Items", plates) +
+        makeTable("Hardware", hardware) +
+        makeTable("Concrete", concrete) +
+        makeTable("Others", others) +
+        makeSummary(totalSteelSections, totalPlates, totalHardware, totalConcrete, totalOthers);
+
+}
+
+
+function makeTable(title, data){
+
+    if(data.length === 0) return "";
+
+    let html = `<div class="section">
+        <h3>${title}</h3>
+        <table>
+        <tr>
+            <th>Item</th>
+            <th>Part Name</th>
+            <th>Qty</th>
+            <th>Total Weight</th>
+            <th>Description</th>
+        </tr>`;
+
+    data.forEach(r=>{
+        html += `<tr>
+            <td>${r[0]}</td>
+            <td>${r[1]}</td>
+            <td>${r[2]}</td>
+            <td>${r[3]}</td>
+            <td>${r[4]}</td>
+        </tr>`;
+    });
+
+    html += "</table></div>";
+    return html;
+}
+
+
+function makeSummary(steel, plates, hardware, concrete, others){
+
+    let totalSteel = steel + plates + hardware;
+
+    return `
+    <div class="summary">
+        <h3>Project Summary</h3>
+        <p><b>Steel Sections:</b> ${steel.toFixed(2)} kg</p>
+        <p><b>Plates:</b> ${plates.toFixed(2)} kg</p>
+        <p><b>Hardware:</b> ${hardware.toFixed(2)} kg</p>
+        <p><b>Total Structural Steel:</b> ${totalSteel.toFixed(2)} kg</p>
+        <hr>
+        <p><b>Concrete:</b> ${concrete.toFixed(2)} kg</p>
+        <p><b>Other Items:</b> ${others.toFixed(2)} kg</p>
+    </div>`;
+}
+
+</script>
+
+</body>
+</html>
