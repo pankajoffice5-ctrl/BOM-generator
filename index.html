@@ -135,7 +135,25 @@ function processData(){
 
         let row = [item, part, qty, massQty.toFixed(2)+" kg", desc];
 
-        if(part.includes("SHS") || part.includes("RHS") || part.includes("CHS") || part.includes("PIPE")){
+        if(
+    part.includes("SHS") ||
+    part.includes("RHS") ||
+    part.includes("CHS") ||
+    part.includes("ANGLE") ||
+    part.includes("ROUND BAR") ||
+    part.includes("PIPE") ||
+    part.includes("UPN") ||
+    part.includes("HEA") ||
+    part.includes("IPE") ||
+    part.includes("IPN") ||
+    part.includes("HEB") ||
+    part.includes("HEX BAR") ||
+    part.includes("REBAR") ||
+    part.includes("SQ BAR") ||
+    part.includes("CHANNEL") ||
+    part.includes("TEE") ||
+    part.includes("FLAT BAR")
+){
             steelSections.push(row);
             totalSteelSections += massQty;
         }
